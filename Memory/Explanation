@@ -1,0 +1,55 @@
+For this project part, we have 3 different C files which we use to measure the memory usage when using mmap and munmap. mmap and munmap are short for memory map and memory unmap. mmap is used to map files or devices into memory. Using mmap, it is specified that we should ask for an anonymous page and in private mode, so we will use the following flags:
+
+- PROT_READ - flag indicates that the pages can be read
+- PROT_WRITE - flag indicates that the pages can be written to
+- MAP_PRIVATE - flag indicates mapping in private mode, that is, changes made to the mapped memory are not visible to other processes and are not written back to the underlying file
+- MAP_ANONYMOUS - flag creates anonymous mapping, which is not backed by any file
+
+The first program, "longProcess", is used to test the "ps" command and the "cat" command, where our aim is to measure the virtual memory size (VSZ) and the resident set size (RSS) of the process (which only includes the physical RAM pages allocated to the process). To measure these informations, we will first run the program, and then we will use the following two commands:
+
+--- ps -p PID -o pid, vsz, rss, comm --- (REPLACE PID WITH THE CURRENT PROCESS ID)
+-p flag means that we will specify the process by its process id
+-o flag specifies the format
+pid, vsz, rss and comm are the information we want to see
+
+Format: 
+    PID    VSZ   RSS COMMAND
+   3205 105184 103808 longProcess2
+
+--- cat /proc/PID/status | grep -E "VmSize|VmRSS" ---
+
+Format:
+	VmSize:	  105180 kB
+	VmRSS:	  103808 kB
+
+
+Now, in the second program, "longProcess2", we have memory mapped a 4kB anonymous page. When we measure again the Virtual memory size and the Resident set size, we notice that the Virtual memory size will increase by 4kB, and the Resident set size will remain the same.
+
+"longProcess1" output:
+	VmSize:	  105180 kB
+	VmRSS:	  103808 kB
+	
+"longProcess2" output:
+	VmSize:	  105184 kB
+	VmRSS:	  103808 kB
+
+This output makes sense since the program requested an additional 4kB page from the OS, thus inceasing VmSize by 4kB. The VmRSS did not change since we didn't access the memory-mapped page, it isn't loaded into physical memory.
+
+
+In the final program, "longProcess3", we additionally wrote some data into the memory mapped page. Now we will meause the virtual and physical memory usage again.
+
+"longProcess2" output:
+	VmSize:	  105184 kB
+	VmRSS:	  103808 kB
+	
+"longProcess3" output:
+	VmSize:	  105184 kB
+	VmRSS:	  103808 kB
+	
+Here we notice that the VmSize remains the same, which makes sense, since we didn't map any more pages. If we were to map another 4kB page, the VmSize will increase by another 4kB. Here, we expect the VmRSS to increase, since we wrote data into the memory mapped page, but it remains the same. This might be because of some optimizations done by the OS. For example, if the written data can already fit within the existing allocated memory, the program might not immediately request more physical memory. But logically, we expect an increase of 4kB in the VmRSS.
+	
+	
+	
+	
+	
+	

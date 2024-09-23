@@ -1,0 +1,41 @@
+For the third project part, we are dealing with concurrency. In this case, we are looking at semaphores and how they operate.
+
+Restrictions: We can only declare the following variables:
+	- int count
+	- semaphore m, fullBox, emptyBox
+	- initial values of semaphores are not specified
+	- we may invoke wait and post methods on a semaphore
+
+In our case, we will use semaphore m as the mutex semaphore. We know that a semaphore with the init value of 1 acts as a simple lock (binary semaphore = mutex), and that's what our semaphore m will be. We will use it to enter and exit critical sections.
+
+A critical section is the part of the code that can only be accessed by one thread at a time. When one thread is executing a critical section, other threads can:
+	- Execute non-critical sections
+	- Wait for the critical section
+
+The fullBox semaphore initially has a value of 0, and the emptyBox semaphore initially has a value of 1. This means that initially, the box is empty, so the mother first has to fill up the box.
+
+Now, we will explain the code:
+
+--- child function ---
+
+The child function waits until there is at least one toy in the box. (sem_wait(&fullBox) - initially, the semaphore value is 0, so the child threads will be put to sleep).
+The child then enters the critical section to safely decrement the toy count. This is done with the mutex semaphore, so 		that multiple children don't try to decrement the counter at the same time (which will result in a mess).
+If the box becomes empty (count == 0), the child signals the mother with sem_post(&emptyBox), so it can refill the box.
+The child exits the critical section and simulates playing with the toy by sleeping for a random time between 0 and 2 seconds.
+
+--- mother function ---
+
+The mother function waits until the box is empty (sem_wait(&emptyBox) - initially, the box is empty, so the mother functino will refill the box and signal to the children that there are toys in the box).
+It then enters the critical section so it can sefely fill up the toy box. (set count = N, signal that toys are available by "incrementing" the fullBox semaphore).
+It then sleeps for 1 second to simulate the time it takes to refill the box.
+
+--- main function ---
+
+We already explained the semaphores and their initial values above.
+We then create the mother thread and 5 children threads
+Then we join the threads, but in this case, this will never happen since the program is an infinite loop. Same thing with the sem_destroy, that will never happen since the program runs indefinitely, which means that we can only stop the program by pressing CTRL+C in the terminal.
+
+
+
+
+
